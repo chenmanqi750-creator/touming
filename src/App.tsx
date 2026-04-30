@@ -7,18 +7,12 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-import photo1 from './assets/images/photo1.png';
-import photo2 from './assets/images/photo2.png';
-import photo3 from './assets/images/photo3.png';
-import photo4 from './assets/images/photo4.png';
-import raincoat from './assets/images/raincoat.png';
-
 const IMAGES = [
-  photo1,
-  photo2,
-  photo3,
-  photo4,
-  raincoat
+  '/assets/images/photo1.png',
+  '/assets/images/photo2.png',
+  '/assets/images/photo3.png',
+  '/assets/images/photo4.png',
+  '/assets/images/raincoat.png'
 ];
 
 export default function App() {
