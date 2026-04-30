@@ -11,14 +11,16 @@ import photo1 from './assets/images/photo1.png';
 import photo2 from './assets/images/photo2.png';
 import photo3 from './assets/images/photo3.png';
 import photo4 from './assets/images/photo4.png';
-import raincoat from './assets/images/raincoat.png';
+import photo5 from './assets/images/photo5.png';
+import photo6 from './assets/images/photo6.png';
 
 const IMAGES = [
   photo1,
   photo2,
   photo3,
   photo4,
-  raincoat
+  photo5,
+  photo6
 ];
 
 export default function App() {
