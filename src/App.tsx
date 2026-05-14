@@ -160,6 +160,8 @@ export default function App() {
             <div>Click anywhere to advance</div>
           </div>
           
+          {/* 控件已被隐藏，需要时只要移除下面这一行的 `false && (` 即可 */}
+          {false && (
           <AnimatePresence mode="wait">
             {!isControlsOpen ? (
               <motion.button
@@ -301,6 +303,7 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
+          )}
         </div>
         <div className="text-xl md:text-3xl font-serif italic flex gap-4 items-end pointer-events-none">
           <span className="text-sm opacity-50 block pb-1">No.</span> {String(currentIndex + 1).padStart(2, '0')}
