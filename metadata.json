@@ -1,0 +1,6 @@
+{
+  "name": "Remix: Glassmorphic Mouse",
+  "description": "A sleek animation transforming a solid white mouse into a transparent, glass-like texture using framer-motion and Tailwind CSS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
