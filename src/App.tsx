@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ChevronRight, Settings, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings, X, Download, Upload } from 'lucide-react';
 
 import { useLocalStorage } from './hooks';
 
@@ -78,6 +78,50 @@ export default function App() {
     setCurrentIndex((prev) => (prev === 0 ? IMAGES.length - 1 : prev - 1));
   };
 
+  const exportData = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const data = {
+      imageOpacities,
+      useBlendScreens,
+      imageScales,
+      filterIntensities,
+      wobbleAmplitudes,
+      wobbleFrequencies
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'gallery-settings.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.imageOpacities) setImageOpacities(data.imageOpacities);
+        if (data.useBlendScreens) setUseBlendScreens(data.useBlendScreens);
+        if (data.imageScales) setImageScales(data.imageScales);
+        if (data.filterIntensities) setFilterIntensities(data.filterIntensities);
+        if (data.wobbleAmplitudes) setWobbleAmplitudes(data.wobbleAmplitudes);
+        if (data.wobbleFrequencies) setWobbleFrequencies(data.wobbleFrequencies);
+      } catch (error) {
+        console.error("Failed to parse settings JSON");
+        alert("Failed to parse settings JSON.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const filterString = `invert(${currentFilterIntensity}) grayscale(${currentFilterIntensity * 100}%) contrast(${1 + currentFilterIntensity}) brightness(${1 + currentFilterIntensity * 0.5})`;
 
   return (
@@ -89,9 +133,20 @@ export default function App() {
         <div className="text-xs tracking-[0.4em] font-bold uppercase opacity-80">
           Studio / Gallery
         </div>
-        <div className="text-right">
-          <p className="text-[10px] uppercase tracking-widest opacity-40 mb-2">Collection</p>
-          <p className="text-sm font-light">Dark Canvas</p>
+        <div className="text-right flex flex-col gap-4 items-end pointer-events-auto">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest opacity-40 mb-2">Collection</p>
+            <p className="text-sm font-light">Dark Canvas</p>
+          </div>
+          <div className="flex gap-2">
+            <label className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md cursor-pointer transition-colors" title="Import Settings">
+              <Upload size={14} />
+              <input type="file" accept=".json" className="hidden" onChange={importData} onClick={e => e.stopPropagation()} />
+            </label>
+            <button onClick={exportData} className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors" title="Export Settings">
+              <Download size={14} />
+            </button>
+          </div>
         </div>
       </nav>
 
