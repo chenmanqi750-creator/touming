@@ -6,13 +6,60 @@ import { Canvas } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { ParticleScene } from './components/Visuals/ParticleScene';
 import { TransparentObjectLayer } from './components/TransparentObjectLayer';
-import { loadTransparentSettings, getTransparentStyleConfig, defaultSettings, DEFAULT_TRANSPARENT_IMAGE, type TransparentSettings, migrateToumingVisualSettings } from './lib/transparentConfig';
+import { loadTransparentSettings, getTransparentStyleConfig, defaultSettings, DEFAULT_TRANSPARENT_IMAGE, type TransparentSettings, migrateToumingVisualSettings, DEFAULT_TRANSPARENT_OPACITY } from './lib/transparentConfig';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import * as Tone from 'tone';
 import * as THREE from 'three';
 import { db, handleFirestoreError, OperationType, isFirebaseEnabled } from './lib/firebase';
 import { doc, onSnapshot, setDoc, getDocFromServer } from 'firebase/firestore';
-import { Camera, CameraOff } from 'lucide-react';
+import { Camera, CameraOff, ChevronDown, Settings, Sparkles } from 'lucide-react';
+
+type VisualPresetKey = 'gentle' | 'pulse' | 'flow';
+
+const VISUAL_PRESETS: Record<
+  VisualPresetKey,
+  {
+    label: string;
+    description: string;
+    opacity: number;
+    scale: number;
+    filterIntensity: number;
+    wobbleAmplitude: number;
+    wobbleFrequency: number;
+    useBlendScreen: boolean;
+  }
+> = {
+  gentle: {
+    label: 'Gentle',
+    description: 'Soft, grounded and restrained.',
+    opacity: DEFAULT_TRANSPARENT_OPACITY,
+    scale: 0.85,
+    filterIntensity: 0.22,
+    wobbleAmplitude: 3,
+    wobbleFrequency: 0.6,
+    useBlendScreen: false,
+  },
+  pulse: {
+    label: 'Pulse',
+    description: 'Larger scale, stronger breathing motion.',
+    opacity: DEFAULT_TRANSPARENT_OPACITY,
+    scale: 1.5,
+    filterIntensity: 0.28,
+    wobbleAmplitude: 8,
+    wobbleFrequency: 1.2,
+    useBlendScreen: false,
+  },
+  flow: {
+    label: 'Flow',
+    description: 'Layered glow with screen blending.',
+    opacity: DEFAULT_TRANSPARENT_OPACITY,
+    scale: 1.0,
+    filterIntensity: 0.24,
+    wobbleAmplitude: 5,
+    wobbleFrequency: 0.8,
+    useBlendScreen: true,
+  },
+};
 
 export default function App() {
   const { isStarted, startAudio, triggerNote, setMusicEvolution, evolution, getAudioData } = useAudio();
@@ -32,6 +79,8 @@ export default function App() {
   const [lsFilterIntensities, setLsFilterIntensities] = useLocalStorage<Record<number, number>>('filterIntensities', {});
   const [lsWobbleAmplitudes, setLsWobbleAmplitudes] = useLocalStorage<Record<number, number>>('wobbleAmplitudes', {});
   const [lsWobbleFrequencies, setLsWobbleFrequencies] = useLocalStorage<Record<number, number>>('wobbleFrequencies', {});
+  const [isControlsOpen, setIsControlsOpen] = useLocalStorage<boolean>('isControlsOpen', true);
+  const [selectedPreset, setSelectedPreset] = useLocalStorage<Record<number, string>>('selectedPreset', {});
   const [importPreview, setImportPreview] = useState<null | { willImport: string[]; willIgnore: string[]; visual: Partial<TransparentSettings> }>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [lastImportBackupKey, setLastImportBackupKey] = useState<string | null>(null);
@@ -41,13 +90,16 @@ export default function App() {
   const intensityRef = useRef(0);
   const requestRef = useRef<number>(null);
   const explosionTimeoutRef = useRef<number | null>(null);
+  const switchTimeoutRef = useRef<number | null>(null);
   const restoreTimeoutRef = useRef<number | null>(null);
+  const initialImageSeededRef = useRef(false);
+  const nextImagePreloadRef = useRef<HTMLImageElement | null>(null);
   const explosionConfig = React.useMemo(
     () => ({
-      originalFadeDuration: 1200,
-      particleExplosionDuration: 2200,
-      restoreDelay: 450,
-      cycleDelay: 2800,
+      originalFadeDuration: 920,
+      particleExplosionDuration: 1800,
+      restoreDelay: 60,
+      cycleDelay: 1800,
     }),
     [],
   );
@@ -56,7 +108,14 @@ export default function App() {
     let active = true;
 
     loadTransparentSettings().then((settings) => {
-      if (active) setTransparentSettings(settings);
+      if (!active) return;
+      setTransparentSettings(settings);
+
+      if (!initialImageSeededRef.current && settings.imageSources.length > 0) {
+        const randomIndex = Math.floor(Math.random() * settings.imageSources.length);
+        setCurrentImageIndex(randomIndex);
+        initialImageSeededRef.current = true;
+      }
     });
 
     return () => {
@@ -68,6 +127,8 @@ export default function App() {
   const imageIndex = currentImageIndex % imageSources.length;
   const currentImageSource = imageSources[imageIndex] ?? DEFAULT_TRANSPARENT_IMAGE;
   const currentImageStyle = getTransparentStyleConfig(transparentSettings, imageIndex);
+  const currentPreset = selectedPreset[imageIndex] as VisualPresetKey | undefined;
+  const activePreset = currentPreset && currentPreset in VISUAL_PRESETS ? (currentPreset as VisualPresetKey) : undefined;
 
   // Build effective style by applying localStorage overrides (whitelist only) on top of loaded settings
   const effectiveStyle = {
@@ -80,9 +141,34 @@ export default function App() {
     wobbleFrequency: lsWobbleFrequencies[imageIndex] ?? currentImageStyle.wobbleFrequency,
   };
 
+  const applyPreset = (presetName: VisualPresetKey) => {
+    const preset = VISUAL_PRESETS[presetName];
+
+    setLsImageOpacities((prev) => ({ ...prev, [imageIndex]: preset.opacity }));
+    setLsImageScales((prev) => ({ ...prev, [imageIndex]: preset.scale }));
+    setLsFilterIntensities((prev) => ({ ...prev, [imageIndex]: preset.filterIntensity }));
+    setLsWobbleAmplitudes((prev) => ({ ...prev, [imageIndex]: preset.wobbleAmplitude }));
+    setLsWobbleFrequencies((prev) => ({ ...prev, [imageIndex]: preset.wobbleFrequency }));
+    setLsUseBlendScreens((prev) => ({ ...prev, [imageIndex]: preset.useBlendScreen }));
+    setSelectedPreset((prev) => ({ ...prev, [imageIndex]: presetName }));
+  };
+
   useEffect(() => {
     setSourcePositions([]);
   }, [currentImageSource]);
+
+  useEffect(() => {
+    if (imageSources.length < 2) return;
+
+    const nextIndex = (imageIndex + 1) % imageSources.length;
+    const nextSource = imageSources[nextIndex];
+    if (!nextSource || nextSource === currentImageSource) return;
+
+    const preloadImage = new Image();
+    preloadImage.crossOrigin = 'anonymous';
+    preloadImage.src = nextSource;
+    nextImagePreloadRef.current = preloadImage;
+  }, [currentImageIndex, currentImageSource, imageIndex, imageSources]);
 
   // Connectivity check
   const checkConnection = useCallback(async () => {
@@ -184,6 +270,14 @@ export default function App() {
     };
   }, [isStarted, animate]);
 
+  useEffect(() => {
+    return () => {
+      if (explosionTimeoutRef.current) window.clearTimeout(explosionTimeoutRef.current);
+      if (switchTimeoutRef.current) window.clearTimeout(switchTimeoutRef.current);
+      if (restoreTimeoutRef.current) window.clearTimeout(restoreTimeoutRef.current);
+    };
+  }, []);
+
   const handleSplashPointerDown = async (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('button, a, input, label')) return;
     const target = e.currentTarget as HTMLElement;
@@ -226,11 +320,18 @@ export default function App() {
     if (explosionTimeoutRef.current) {
       window.clearTimeout(explosionTimeoutRef.current);
     }
+    if (switchTimeoutRef.current) {
+      window.clearTimeout(switchTimeoutRef.current);
+    }
     if (restoreTimeoutRef.current) {
       window.clearTimeout(restoreTimeoutRef.current);
     }
 
     const nextIndex = (currentImageIndex + 1) % imageSources.length;
+    switchTimeoutRef.current = window.setTimeout(() => {
+      setCurrentImageIndex(nextIndex);
+    }, explosionConfig.cycleDelay);
+
     explosionTimeoutRef.current = window.setTimeout(() => {
       setIsExploding(false);
       setMode('idle');
@@ -238,9 +339,8 @@ export default function App() {
 
     restoreTimeoutRef.current = window.setTimeout(() => {
       setInteractionPoint(null);
-      setCurrentImageIndex(nextIndex);
       setImageFadedOut(false);
-    }, explosionConfig.cycleDelay);
+    }, explosionConfig.cycleDelay + explosionConfig.restoreDelay);
 
     syncToFirebase({
       lastInteraction: { x: point.x, y: point.y, z: point.z, timestamp: Date.now() },
@@ -303,6 +403,7 @@ export default function App() {
         imageConfig={effectiveStyle}
         isFadedOut={imageFadedOut}
         fadeDurationMs={explosionConfig.originalFadeDuration}
+        fragmentDurationMs={explosionConfig.particleExplosionDuration}
         onSourceReady={setSourcePositions}
         style={{ zIndex: 10 }}
       />
@@ -510,6 +611,203 @@ export default function App() {
           Sync_Offline
         </div>
       )}
+      <div className="fixed bottom-6 left-6 z-50 pointer-events-auto">
+        <AnimatePresence initial={false} mode="wait">
+          {!isControlsOpen ? (
+            <motion.button
+              key="visual-controls-open"
+              initial={{ opacity: 0, x: -10, y: 8, scale: 0.92 }}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -10, y: 8, scale: 0.92 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setIsControlsOpen(true)}
+              className="flex items-center gap-2 rounded-full border border-white/10 bg-black/50 px-3 py-2 text-[10px] uppercase tracking-[0.35em] text-white/70 backdrop-blur-xl shadow-[0_18px_80px_rgba(0,0,0,0.45)] hover:border-white/20 hover:bg-black/60"
+            >
+              <Settings size={14} />
+              Visuals
+            </motion.button>
+          ) : (
+            <motion.div
+              key="visual-controls-panel"
+              initial={{ opacity: 0, x: -14, y: 14, scale: 0.96 }}
+              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -14, y: 14, scale: 0.96 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="w-[320px] rounded-2xl border border-white/10 bg-black/55 p-4 text-white shadow-[0_24px_90px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.35em] text-white/55">
+                    <Sparkles size={12} />
+                    Visual controls
+                  </div>
+                  <div className="mt-1 text-sm font-medium text-white/90">
+                    Image {String(imageIndex + 1).padStart(2, '0')}
+                    <span className="ml-2 text-white/35">
+                      {activePreset ? `Preset: ${VISUAL_PRESETS[activePreset].label}` : 'Custom'}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsControlsOpen(false)}
+                  className="rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition hover:border-white/20 hover:bg-white/10 hover:text-white"
+                  title="Collapse controls"
+                >
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {(Object.entries(VISUAL_PRESETS) as Array<[VisualPresetKey, (typeof VISUAL_PRESETS)[VisualPresetKey]]>).map(([presetName, preset]) => {
+                  const isActive = activePreset === presetName;
+
+                  return (
+                    <button
+                      key={presetName}
+                      onClick={() => applyPreset(presetName)}
+                      className={`rounded-xl border px-2 py-2 text-left transition ${
+                        isActive
+                          ? 'border-white/70 bg-white text-black shadow-[0_0_0_1px_rgba(255,255,255,0.4)]'
+                          : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.3em]">
+                        {preset.label}
+                      </div>
+                      <div className={`mt-1 text-[10px] leading-snug ${isActive ? 'text-black/65' : 'text-white/45'}`}>
+                        {preset.description}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {[
+                  {
+                    label: 'Opacity',
+                    value: effectiveStyle.opacity,
+                    min: 0.1,
+                    max: 1,
+                    step: 0.01,
+                    onChange: (value: number) => setLsImageOpacities((prev) => ({ ...prev, [imageIndex]: value })),
+                  },
+                  {
+                    label: 'Scale',
+                    value: effectiveStyle.scale,
+                    min: 0.6,
+                    max: 1.8,
+                    step: 0.01,
+                    onChange: (value: number) => setLsImageScales((prev) => ({ ...prev, [imageIndex]: value })),
+                  },
+                  {
+                    label: 'Filter',
+                    value: effectiveStyle.filterIntensity,
+                    min: 0,
+                    max: 1,
+                    step: 0.01,
+                    onChange: (value: number) => setLsFilterIntensities((prev) => ({ ...prev, [imageIndex]: value })),
+                  },
+                  {
+                    label: 'Wobble amp',
+                    value: effectiveStyle.wobbleAmplitude,
+                    min: 0,
+                    max: 14,
+                    step: 0.1,
+                    onChange: (value: number) => setLsWobbleAmplitudes((prev) => ({ ...prev, [imageIndex]: value })),
+                  },
+                  {
+                    label: 'Wobble freq',
+                    value: effectiveStyle.wobbleFrequency,
+                    min: 0.2,
+                    max: 2.5,
+                    step: 0.01,
+                    onChange: (value: number) => setLsWobbleFrequencies((prev) => ({ ...prev, [imageIndex]: value })),
+                  },
+                ].map((control) => (
+                  <label key={control.label} className="block">
+                    <div className="mb-2 flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-white/55">
+                      <span>{control.label}</span>
+                      <span className="font-mono text-white/35">
+                        {control.value.toFixed(control.step < 0.1 ? 2 : control.step < 1 ? 1 : 0)}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={control.min}
+                      max={control.max}
+                      step={control.step}
+                      value={control.value}
+                      onChange={(e) => control.onChange(Number(e.target.value))}
+                      className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-white"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <button
+                  onClick={() => {
+                    setLsUseBlendScreens((prev) => ({ ...prev, [imageIndex]: !effectiveStyle.useBlendScreen }));
+                    setSelectedPreset((prev) => ({ ...prev, [imageIndex]: 'custom' }));
+                  }}
+                  className={`rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.3em] transition ${
+                    effectiveStyle.useBlendScreen
+                      ? 'border-cyan-400/30 bg-cyan-400/10 text-cyan-200'
+                      : 'border-white/10 bg-white/5 text-white/60 hover:border-white/20 hover:bg-white/10'
+                  }`}
+                >
+                  Blend {effectiveStyle.useBlendScreen ? 'On' : 'Off'}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setLsImageOpacities((prev) => {
+                      const next = { ...prev };
+                      delete next[imageIndex];
+                      return next;
+                    });
+                    setLsImageScales((prev) => {
+                      const next = { ...prev };
+                      delete next[imageIndex];
+                      return next;
+                    });
+                    setLsFilterIntensities((prev) => {
+                      const next = { ...prev };
+                      delete next[imageIndex];
+                      return next;
+                    });
+                    setLsWobbleAmplitudes((prev) => {
+                      const next = { ...prev };
+                      delete next[imageIndex];
+                      return next;
+                    });
+                    setLsWobbleFrequencies((prev) => {
+                      const next = { ...prev };
+                      delete next[imageIndex];
+                      return next;
+                    });
+                    setLsUseBlendScreens((prev) => {
+                      const next = { ...prev };
+                      delete next[imageIndex];
+                      return next;
+                    });
+                    setSelectedPreset((prev) => {
+                      const next = { ...prev };
+                      delete next[imageIndex];
+                      return next;
+                    });
+                  }}
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-[0.3em] text-white/60 transition hover:border-white/20 hover:bg-white/10"
+                  title="Reset current image overrides"
+                >
+                  Reset
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       {/* Particles Control Indicator */}
       <div className="fixed bottom-6 right-6 flex flex-col items-end gap-2 pointer-events-none z-50">
         <div className={`px-3 py-1.5 rounded-full text-[10px] font-mono tracking-widest uppercase transition-all duration-500 border ${

@@ -46,6 +46,31 @@ export type TransparentStyleConfig = {
 };
 
 export const DEFAULT_TRANSPARENT_IMAGE = 'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/1.PNG';
+export const DEFAULT_TRANSPARENT_OPACITY = 0.83;
+export const DEFAULT_TRANSPARENT_FILTER_INTENSITY = 0.89;
+export const DEFAULT_TRANSPARENT_IMAGE_SOURCES = [
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/1.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/17.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/18.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/2.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/3.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/4.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/5.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/6.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/7.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/8.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/9.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/10.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/11.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/19.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/13.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/14.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/15.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/16.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/20.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/21.PNG',
+  'https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/22.PNG',
+] as const;
 
 const normalizeIndexMap = <T>(value: any, defaultValue: T): Record<number, T> => {
   const result: Record<number, T> = {};
@@ -97,16 +122,16 @@ const normalizeSources = (value: any): string[] => {
 };
 
 export const defaultSettings: TransparentSettings = {
-  imageSources: [DEFAULT_TRANSPARENT_IMAGE],
-  imageOpacities: {},
-  useBlendScreens: {},
+  imageSources: [...DEFAULT_TRANSPARENT_IMAGE_SOURCES],
+  imageOpacities: { 0: DEFAULT_TRANSPARENT_OPACITY },
+  useBlendScreens: { 0: true },
   imageScales: {},
-  filterIntensities: {},
+  filterIntensities: { 0: DEFAULT_TRANSPARENT_FILTER_INTENSITY },
   wobbleAmplitudes: {},
   wobbleFrequencies: {},
   dropShadows: {},
   glows: {},
-  blendModes: {},
+  blendModes: { 0: 'screen' },
 };
 
 export const normalizeTransparentSettings = (raw: TransparentSettingsRaw): TransparentSettings => {
@@ -123,7 +148,7 @@ export const normalizeTransparentSettings = (raw: TransparentSettingsRaw): Trans
     imageOpacities: normalizeIndexMap<number>(opacityBase, 1),
     useBlendScreens: normalizeBooleanMap(blendScreenBase),
     imageScales: normalizeIndexMap<number>(scaleBase, 1),
-    filterIntensities: normalizeIndexMap<number>(filterIntensityBase, 0.24),
+    filterIntensities: normalizeIndexMap<number>(filterIntensityBase, DEFAULT_TRANSPARENT_FILTER_INTENSITY),
     wobbleAmplitudes: normalizeIndexMap<number>(wobbleAmplitudeBase, 0),
     wobbleFrequencies: normalizeIndexMap<number>(wobbleFrequencyBase, 1),
     dropShadows: normalizeStringMap(raw.dropShadow),
@@ -159,9 +184,9 @@ export const getTransparentStyleConfig = (settings: TransparentSettings, index: 
   const useIndex = index % Math.max(1, settings.imageSources.length);
 
   return {
-    opacity: settings.imageOpacities[useIndex] ?? 1,
+    opacity: settings.imageOpacities[useIndex] ?? DEFAULT_TRANSPARENT_OPACITY,
     scale: settings.imageScales[useIndex] ?? 1,
-    filterIntensity: settings.filterIntensities[useIndex] ?? 0.24,
+    filterIntensity: settings.filterIntensities[useIndex] ?? DEFAULT_TRANSPARENT_FILTER_INTENSITY,
     useBlendScreen: settings.useBlendScreens[useIndex] ?? false,
     mixBlendMode: settings.blendModes[useIndex] || (settings.useBlendScreens[useIndex] ? 'screen' : 'normal'),
     dropShadow: settings.dropShadows[useIndex] || 'drop-shadow(0 0 12px rgba(56, 189, 248, 0.14))',
