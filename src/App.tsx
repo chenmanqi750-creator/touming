@@ -42,20 +42,6 @@ const IMAGES = [
   "https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/22.PNG",
 ];
 
-// 预设方案定义 - 透明度统一为83%，pulse方案1.5x大缩放
-const PRESETS = {
-  gentle: { opacity: 0.83, scale: 0.85, wobbleAmplitude: 3, wobbleFrequency: 0.6, blendScreen: false },
-  pulse: { opacity: 0.83, scale: 1.5, wobbleAmplitude: 8, wobbleFrequency: 1.2, blendScreen: false },
-  flow: { opacity: 0.83, scale: 1.0, wobbleAmplitude: 5, wobbleFrequency: 0.8, blendScreen: true }
-};
-
-// 预设图标定义 - SVG icons
-const PRESET_ICONS: Record<keyof typeof PRESETS, { label: string; svg: string }> = {
-  gentle: { label: 'Gentle', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M5.64 5.64l14.14 14.14M18.36 5.64L4.22 19.78"/></svg>' },
-  pulse: { label: 'Pulse', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-4 2 8 2-4h8M6 19l2-2m6 2l2-2"/></svg>' },
-  flow: { label: 'Flow', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c0-4 4-6 8-6 2 0 3 1 4 2 1-1 2-2 4-2 4 0 8 2 8 6M6 20c2-1 3-3 6-3s4 2 6 3"/></svg>' }
-};
-
 export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageOpacities, setImageOpacities] = useLocalStorage<Record<number, number>>("imageOpacities", {});
@@ -65,12 +51,11 @@ export default function App() {
   const [wobbleAmplitudes, setWobbleAmplitudes] = useLocalStorage<Record<number, number>>("wobbleAmplitudes", {});
   const [wobbleFrequencies, setWobbleFrequencies] = useLocalStorage<Record<number, number>>("wobbleFrequencies", {});
   const [isControlsOpen, setIsControlsOpen] = useLocalStorage<boolean>("isControlsOpen", true);
-  const [selectedPreset, setSelectedPreset] = useLocalStorage<Record<number, string>>("selectedPreset", {});
 
-  const currentOpacity = imageOpacities[currentIndex] ?? 0.83;
+  const currentOpacity = imageOpacities[currentIndex] ?? 1;
   const currentBlendScreen = useBlendScreens[currentIndex] ?? false;
   const currentScale = imageScales[currentIndex] ?? 1;
-  const currentFilterIntensity = filterIntensities[currentIndex] ?? 0.8;
+  const currentFilterIntensity = filterIntensities[currentIndex] ?? 0;
   const currentWobbleAmplitude = wobbleAmplitudes[currentIndex] ?? 0;
   const currentWobbleFrequency = wobbleFrequencies[currentIndex] ?? 1;
 
@@ -82,16 +67,6 @@ export default function App() {
   const handleFilterIntensityChange = (val: number) => setFilterIntensities(prev => ({ ...prev, [currentIndex]: val }));
   const handleWobbleAmplitudeChange = (val: number) => setWobbleAmplitudes(prev => ({ ...prev, [currentIndex]: val }));
   const handleWobbleFrequencyChange = (val: number) => setWobbleFrequencies(prev => ({ ...prev, [currentIndex]: val }));
-
-  const applyPreset = (presetName: keyof typeof PRESETS) => {
-    const preset = PRESETS[presetName];
-    setImageOpacities(prev => ({ ...prev, [currentIndex]: preset.opacity }));
-    setImageScales(prev => ({ ...prev, [currentIndex]: preset.scale }));
-    setWobbleAmplitudes(prev => ({ ...prev, [currentIndex]: preset.wobbleAmplitude }));
-    setWobbleFrequencies(prev => ({ ...prev, [currentIndex]: preset.wobbleFrequency }));
-    setUseBlendScreens(prev => ({ ...prev, [currentIndex]: preset.blendScreen }));
-    setSelectedPreset(prev => ({ ...prev, [currentIndex]: presetName }));
-  };
 
   const nextImage = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -241,44 +216,19 @@ export default function App() {
           </div>
           
           {/* 控件已被隐藏，需要时只要移除下面这一行的 `false && (` 即可 */}
+          {false && (
           <AnimatePresence mode="wait">
             {!isControlsOpen ? (
-              <motion.div
-                key="preset-buttons"
+              <motion.button
+                key="open-button"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="flex flex-row gap-3 items-center"
+                onClick={(e) => { e.stopPropagation(); setIsControlsOpen(true); }}
+                className="w-10 h-10 rounded-full bg-white/20 blur-[1px] hover:blur-none backdrop-blur-md flex items-center justify-center transition-all border border-white/30"
               >
-                <button
-                  onClick={(e) => { e.stopPropagation(); setIsControlsOpen(true); }}
-                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center transition-all border border-white/30 text-white/70 hover:text-white"
-                  title="Open Settings"
-                >
-                  <Settings size={18} />
-                </button>
-                <div className="flex flex-row gap-2">
-                  {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map(presetName => (
-                    <motion.button
-                      key={`preset-icon-${presetName}`}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={(e) => { e.stopPropagation(); applyPreset(presetName); }}
-                      className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border ${
-                        selectedPreset[currentIndex] === presetName
-                          ? 'bg-white text-black border-white/80'
-                          : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20 hover:border-white/40'
-                      }`}
-                      title={PRESET_ICONS[presetName].label}
-                    >
-                      <div 
-                        className="w-5 h-5"
-                        dangerouslySetInnerHTML={{ __html: PRESET_ICONS[presetName].svg }}
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
+                <Settings size={18} className="text-white" />
+              </motion.button>
             ) : (
               <motion.div 
                 key="controls-panel"
@@ -295,27 +245,6 @@ export default function App() {
                     <X size={16} />
                   </button>
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/70">Presets</label>
-                  <div className="flex gap-2 flex-wrap">
-                    {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map(presetName => (
-                      <button
-                        key={presetName}
-                        onClick={() => applyPreset(presetName)}
-                        className={`px-2 py-1 text-[9px] uppercase tracking-widest rounded transition-all ${
-                          selectedPreset[currentIndex] === presetName
-                            ? 'bg-white text-black font-semibold'
-                            : 'bg-white/20 text-white/70 hover:bg-white/30'
-                        }`}
-                      >
-                        {presetName}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="w-full h-px bg-white/10" />
 
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between">
@@ -429,6 +358,7 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
+          )}
         </div>
         <div className="text-xl md:text-3xl font-serif italic flex gap-4 items-end pointer-events-none">
           <span className="text-sm opacity-50 block pb-1">No.</span> {String(currentIndex + 1).padStart(2, '0')}
