@@ -1,0 +1,23 @@
+{
+  "imageSources": [
+    "https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/1.PNG"
+  ],
+  "imageOpacities": {
+    "0": 0.83
+  },
+  "useBlendScreens": {
+    "0": true
+  },
+  "imageScales": {
+    "0": 1
+  },
+  "filterIntensities": {
+    "0": 0.24
+  },
+  "wobbleAmplitudes": {
+    "0": 0
+  },
+  "wobbleFrequencies": {
+    "0": 1
+  }
+}
