@@ -1,0 +1,223 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1620" viewBox="0 0 1080 1620" fill="none">
+  <defs>
+    <linearGradient id="bgSky" x1="0" y1="0" x2="1080" y2="1620" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7BE1FF" />
+      <stop offset="45%" stop-color="#B8F1FF" />
+      <stop offset="78%" stop-color="#FFE9A8" />
+      <stop offset="100%" stop-color="#FFB3C7" />
+    </linearGradient>
+
+    <linearGradient id="panelGlow" x1="160" y1="260" x2="920" y2="1360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.96" />
+      <stop offset="100%" stop-color="#FFF7F0" stop-opacity="0.94" />
+    </linearGradient>
+
+    <linearGradient id="titleFill" x1="240" y1="520" x2="840" y2="780" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF5F87" />
+      <stop offset="28%" stop-color="#FF9B2F" />
+      <stop offset="58%" stop-color="#FFD84B" />
+      <stop offset="82%" stop-color="#49D6A3" />
+      <stop offset="100%" stop-color="#4C8CFF" />
+    </linearGradient>
+
+    <linearGradient id="ribbonFill" x1="150" y1="0" x2="930" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF79A9" />
+      <stop offset="50%" stop-color="#7FD8FF" />
+      <stop offset="100%" stop-color="#FFE56A" />
+    </linearGradient>
+
+    <linearGradient id="balloonPink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFB8D1" />
+      <stop offset="100%" stop-color="#FF6FA0" />
+    </linearGradient>
+
+    <linearGradient id="balloonBlue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C6F2FF" />
+      <stop offset="100%" stop-color="#46B8FF" />
+    </linearGradient>
+
+    <linearGradient id="balloonYellow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFF6B8" />
+      <stop offset="100%" stop-color="#FFCC55" />
+    </linearGradient>
+
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#4D6B8B" flood-opacity="0.18" />
+    </filter>
+
+    <filter id="tinyShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#3D4B5E" flood-opacity="0.16" />
+    </filter>
+
+    <path id="star5" d="M0,-16 L4.7,-5.8 L16,0 L4.7,5.8 L0,16 L-4.7,5.8 L-16,0 L-4.7,-5.8 Z" />
+    <path id="cloud" d="M58 38C58 28.1 49.9 20 40 20C33.2 20 27.3 23.7 24.1 29.2C21.9 26.2 18.3 24.3 14.2 24.3C7.5 24.3 2 29.8 2 36.5C2 42.9 7.2 48.1 13.6 48.1H58.8C66.6 48.1 73 41.7 73 33.9C73 26.8 67.6 21 60.7 20.2C59.8 15.8 56 12.7 51.4 12.7C46.2 12.7 42 16.9 42 22.1C42 22.7 42.1 23.3 42.2 23.8C54.1 24.1 63.6 33.9 63.6 45.8C63.6 46.6 63.5 47.3 63.4 48H58Z" />
+  </defs>
+
+  <rect width="1080" height="1620" fill="url(#bgSky)" />
+
+  <g id="background-blobs" opacity="0.22">
+    <circle cx="170" cy="182" r="92" fill="#FFFFFF" />
+    <circle cx="928" cy="238" r="118" fill="#FFFFFF" />
+    <circle cx="884" cy="1410" r="170" fill="#FFFFFF" />
+    <circle cx="146" cy="1336" r="142" fill="#FFFFFF" />
+  </g>
+
+  <g id="confetti" opacity="0.95">
+    <circle cx="115" cy="166" r="10" fill="#FF6B9A" />
+    <circle cx="205" cy="110" r="7" fill="#FFD84B" />
+    <circle cx="320" cy="160" r="8" fill="#49D6A3" />
+    <circle cx="820" cy="138" r="7" fill="#FF9C35" />
+    <circle cx="946" cy="186" r="9" fill="#6ED0FF" />
+    <circle cx="862" cy="320" r="8" fill="#FFE56A" />
+    <circle cx="86" cy="398" r="7" fill="#4C8CFF" />
+    <circle cx="102" cy="1230" r="8" fill="#FF6B9A" />
+    <circle cx="952" cy="1250" r="10" fill="#49D6A3" />
+    <circle cx="892" cy="1498" r="8" fill="#FFD84B" />
+    <circle cx="238" cy="1420" r="9" fill="#4C8CFF" />
+
+    <use href="#star5" xlink:href="#star5" transform="translate(160 280) scale(0.8)" fill="#FFFFFF" opacity="0.85" />
+    <use href="#star5" xlink:href="#star5" transform="translate(256 220) scale(0.55)" fill="#FFFBF0" opacity="0.95" />
+    <use href="#star5" xlink:href="#star5" transform="translate(900 260) scale(0.7)" fill="#FFFFFF" opacity="0.85" />
+    <use href="#star5" xlink:href="#star5" transform="translate(788 382) scale(0.48)" fill="#FFF1A8" opacity="0.95" />
+    <use href="#star5" xlink:href="#star5" transform="translate(188 1268) scale(0.55)" fill="#FFFFFF" opacity="0.9" />
+    <use href="#star5" xlink:href="#star5" transform="translate(892 1186) scale(0.65)" fill="#FFF6C4" opacity="0.96" />
+
+    <rect x="256" y="120" width="18" height="18" rx="4" fill="#FFFFFF" opacity="0.9" transform="rotate(22 265 129)" />
+    <rect x="844" y="180" width="18" height="18" rx="4" fill="#FFD84B" opacity="0.9" transform="rotate(20 853 189)" />
+    <rect x="128" y="1330" width="16" height="16" rx="4" fill="#FFFFFF" opacity="0.9" transform="rotate(26 136 1338)" />
+    <rect x="918" y="1388" width="16" height="16" rx="4" fill="#FF6B9A" opacity="0.9" transform="rotate(24 926 1396)" />
+  </g>
+
+  <g id="top-balloons">
+    <g transform="translate(126 140)" filter="url(#tinyShadow)">
+      <ellipse cx="0" cy="0" rx="52" ry="68" fill="url(#balloonPink)" />
+      <polygon points="0,66 -8,79 8,79" fill="#E55D89" />
+      <path d="M0 79 C2 110, -8 146, -28 180" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="4" fill="none" stroke-linecap="round" />
+      <circle cx="-12" cy="-20" r="9" fill="#FFFFFF" opacity="0.26" />
+    </g>
+    <g transform="translate(932 158)" filter="url(#tinyShadow)">
+      <ellipse cx="0" cy="0" rx="50" ry="66" fill="url(#balloonBlue)" />
+      <polygon points="0,64 -8,77 8,77" fill="#3EA1E6" />
+      <path d="M0 77 C-6 114, 8 152, 24 185" stroke="#FFFFFF" stroke-opacity="0.75" stroke-width="4" fill="none" stroke-linecap="round" />
+      <circle cx="-12" cy="-18" r="8" fill="#FFFFFF" opacity="0.24" />
+    </g>
+    <g transform="translate(862 108)" filter="url(#tinyShadow)">
+      <ellipse cx="0" cy="0" rx="36" ry="48" fill="url(#balloonYellow)" />
+      <polygon points="0,45 -6,58 6,58" fill="#E1AE2A" />
+      <path d="M0 58 C4 102, 9 130, 30 176" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="3.5" fill="none" stroke-linecap="round" />
+      <circle cx="-10" cy="-12" r="6" fill="#FFFFFF" opacity="0.23" />
+    </g>
+  </g>
+
+  <g id="clouds" opacity="0.92">
+    <g transform="translate(76 250) scale(1.18)">
+      <use href="#cloud" xlink:href="#cloud" fill="#FFFFFF" fill-opacity="0.75" />
+    </g>
+    <g transform="translate(790 285) scale(1.1)">
+      <use href="#cloud" xlink:href="#cloud" fill="#FFFFFF" fill-opacity="0.7" />
+    </g>
+    <g transform="translate(184 1160) scale(1.02)">
+      <use href="#cloud" xlink:href="#cloud" fill="#FFFFFF" fill-opacity="0.68" />
+    </g>
+  </g>
+
+  <g id="ribbon" filter="url(#tinyShadow)">
+    <path d="M120 356 C250 310, 830 310, 960 356 L960 420 C830 382, 250 382, 120 420 Z" fill="url(#ribbonFill)" opacity="0.92" />
+    <path d="M120 420 C220 456, 860 456, 960 420 L960 456 C860 500, 220 500, 120 456 Z" fill="#FFFFFF" opacity="0.45" />
+  </g>
+
+  <g id="main-card" filter="url(#softShadow)">
+    <rect x="110" y="390" width="860" height="860" rx="52" fill="url(#panelGlow)" />
+    <rect x="150" y="430" width="780" height="780" rx="40" fill="#FFFFFF" opacity="0.56" stroke="#FFFFFF" stroke-opacity="0.8" />
+  </g>
+
+  <g id="headline">
+    <text x="540" y="615" text-anchor="middle" font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif" font-size="108" font-weight="900" fill="url(#titleFill)" stroke="#FFFFFF" stroke-width="10" paint-order="stroke fill" letter-spacing="2">
+      六一儿童节快乐
+    </text>
+    <text x="540" y="704" text-anchor="middle" font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif" font-size="34" font-weight="700" fill="#4C617A" letter-spacing="1">
+      愿你永远保留好奇、勇敢和笑容
+    </text>
+  </g>
+
+  <g id="badge-row" transform="translate(180 772)">
+    <g filter="url(#tinyShadow)">
+      <rect x="0" y="0" width="720" height="122" rx="34" fill="#FFF9EE" />
+    </g>
+    <g font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif" font-size="30" font-weight="800" text-anchor="middle">
+      <g transform="translate(90 61)">
+        <circle r="34" fill="#FFE3EC" />
+        <text y="11" fill="#FF5F87">快乐</text>
+      </g>
+      <g transform="translate(270 61)">
+        <circle r="34" fill="#E7F7FF" />
+        <text y="11" fill="#4C8CFF">童真</text>
+      </g>
+      <g transform="translate(450 61)">
+        <circle r="34" fill="#E5FBF2" />
+        <text y="11" fill="#2FAE78">想象力</text>
+      </g>
+      <g transform="translate(630 61)">
+        <circle r="34" fill="#FFF2C9" />
+        <text y="11" fill="#E6A700">友爱</text>
+      </g>
+    </g>
+  </g>
+
+  <g id="illustration-layer">
+    <g transform="translate(190 928)">
+      <circle cx="50" cy="55" r="48" fill="#FFDEB6" />
+      <circle cx="25" cy="48" r="10" fill="#7B4E3A" />
+      <circle cx="75" cy="48" r="10" fill="#7B4E3A" />
+      <path d="M34 78 C44 90, 57 90, 67 78" stroke="#7B4E3A" stroke-width="5" stroke-linecap="round" fill="none" />
+      <path d="M20 16 C32 0, 70 0, 83 16" stroke="#8EDCFF" stroke-width="14" stroke-linecap="round" fill="none" />
+      <path d="M12 132 C32 98, 72 98, 92 132" stroke="#FF6B9A" stroke-width="32" stroke-linecap="round" fill="none" />
+      <path d="M50 122 L50 196" stroke="#4C8CFF" stroke-width="10" stroke-linecap="round" />
+      <path d="M50 196 C38 222, 28 238, 14 252" stroke="#4C8CFF" stroke-width="8" stroke-linecap="round" fill="none" />
+      <path d="M50 196 C61 224, 72 238, 88 252" stroke="#4C8CFF" stroke-width="8" stroke-linecap="round" fill="none" />
+    </g>
+
+    <g transform="translate(768 944)">
+      <circle cx="50" cy="55" r="48" fill="#FFD2E1" />
+      <circle cx="25" cy="48" r="10" fill="#7B4E3A" />
+      <circle cx="75" cy="48" r="10" fill="#7B4E3A" />
+      <path d="M34 78 C44 92, 57 92, 67 78" stroke="#7B4E3A" stroke-width="5" stroke-linecap="round" fill="none" />
+      <path d="M18 18 C31 4, 69 4, 82 18" stroke="#FFE56A" stroke-width="14" stroke-linecap="round" fill="none" />
+      <path d="M12 132 C32 98, 72 98, 92 132" stroke="#49D6A3" stroke-width="32" stroke-linecap="round" fill="none" />
+      <path d="M50 122 L50 196" stroke="#FF9C35" stroke-width="10" stroke-linecap="round" />
+      <path d="M50 196 C38 220, 28 236, 16 250" stroke="#FF9C35" stroke-width="8" stroke-linecap="round" fill="none" />
+      <path d="M50 196 C61 222, 72 236, 84 250" stroke="#FF9C35" stroke-width="8" stroke-linecap="round" fill="none" />
+    </g>
+  </g>
+
+  <g id="footer">
+    <path d="M168 1282 C266 1240, 814 1240, 912 1282 L912 1342 C814 1306, 266 1306, 168 1342 Z" fill="url(#ribbonFill)" opacity="0.92" filter="url(#tinyShadow)" />
+    <text x="540" y="1329" text-anchor="middle" font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif" font-size="34" font-weight="800" fill="#FFFFFF" letter-spacing="2">
+      6.1 Children's Day
+    </text>
+    <text x="540" y="1390" text-anchor="middle" font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif" font-size="28" font-weight="700" fill="#4D6B8B">
+      送给每一个长大的小朋友
+    </text>
+  </g>
+
+  <g id="bottom-stars" opacity="0.95">
+    <use href="#star5" xlink:href="#star5" transform="translate(176 1460) scale(0.62)" fill="#FFFFFF" opacity="0.92" />
+    <use href="#star5" xlink:href="#star5" transform="translate(290 1492) scale(0.42)" fill="#FFE56A" />
+    <use href="#star5" xlink:href="#star5" transform="translate(780 1470) scale(0.58)" fill="#FFFFFF" opacity="0.92" />
+    <use href="#star5" xlink:href="#star5" transform="translate(904 1510) scale(0.44)" fill="#FF6B9A" />
+  </g>
+
+  <g id="corner-sun">
+    <circle cx="930" cy="118" r="62" fill="#FFF3A7" opacity="0.88" />
+    <g stroke="#FFF1A3" stroke-width="10" stroke-linecap="round">
+      <line x1="930" y1="28" x2="930" y2="0" />
+      <line x1="930" y1="236" x2="930" y2="208" />
+      <line x1="840" y1="118" x2="812" y2="118" />
+      <line x1="1048" y1="118" x2="1020" y2="118" />
+      <line x1="867" y1="55" x2="847" y2="35" />
+      <line x1="993" y1="181" x2="1013" y2="201" />
+      <line x1="867" y1="181" x2="847" y2="201" />
+      <line x1="993" y1="55" x2="1013" y2="35" />
+    </g>
+  </g>
+</svg>
