@@ -44,19 +44,34 @@ const IMAGES = [
   "https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/22.PNG",
 ];
 
+// 预设方案定义 - 透明度统一为 83%
+const PRESETS = {
+  gentle: { opacity: 0.83, scale: 0.85, wobbleAmplitude: 3, wobbleFrequency: 0.6, blendScreen: false },
+  pulse: { opacity: 0.83, scale: 1.5, wobbleAmplitude: 8, wobbleFrequency: 1.2, blendScreen: false },
+  flow: { opacity: 0.83, scale: 1.0, wobbleAmplitude: 5, wobbleFrequency: 0.8, blendScreen: true }
+};
+
+const PRESET_ICONS: Record<keyof typeof PRESETS, { label: string; svg: string }> = {
+  gentle: { label: 'Gentle', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M5.64 5.64l14.14 14.14M18.36 5.64L4.22 19.78"/></svg>' },
+  pulse: { label: 'Pulse', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-4 2 8 2-4h8M6 19l2-2m6 2l2-2"/></svg>' },
+  flow: { label: 'Flow', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c0-4 4-6 8-6 2 0 3 1 4 2 1-1 2-2 4-2 4 0 8 2 8 6M6 20c2-1 3-3 6-3s4 2 6 3"/></svg>' }
+};
+
 export default function App() {
-  const [deviceId] = useLocalStorage<string>('touming-device-id', ensureDeviceId());
+  const [deviceId, setDeviceId] = useLocalStorage<string>('touming-device-id', ensureDeviceId());
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [queueClaim, setQueueClaim] = useState<QueueClaim | null>(null);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [isQueueLoading, setIsQueueLoading] = useState(true);
-  const [imageOpacities, setImageOpacities] = useLocalStorage<Record<number, number>>("imageOpacities", {});
-  const [useBlendScreens, setUseBlendScreens] = useLocalStorage<Record<number, boolean>>("useBlendScreens", {});
-  const [imageScales, setImageScales] = useLocalStorage<Record<number, number>>("imageScales", {});
-  const [filterIntensities, setFilterIntensities] = useLocalStorage<Record<number, number>>("filterIntensities", {});
-  const [wobbleAmplitudes, setWobbleAmplitudes] = useLocalStorage<Record<number, number>>("wobbleAmplitudes", {});
-  const [wobbleFrequencies, setWobbleFrequencies] = useLocalStorage<Record<number, number>>("wobbleFrequencies", {});
-  const [isControlsOpen, setIsControlsOpen] = useLocalStorage<boolean>("isControlsOpen", true);
+  const [isRejoiningQueue, setIsRejoiningQueue] = useState(false);
+  const [imageOpacities, setImageOpacities] = useLocalStorage<Record<number, number>>('imageOpacities', {});
+  const [useBlendScreens, setUseBlendScreens] = useLocalStorage<Record<number, boolean>>('useBlendScreens', {});
+  const [imageScales, setImageScales] = useLocalStorage<Record<number, number>>('imageScales', {});
+  const [filterIntensities, setFilterIntensities] = useLocalStorage<Record<number, number>>('filterIntensities', {});
+  const [wobbleAmplitudes, setWobbleAmplitudes] = useLocalStorage<Record<number, number>>('wobbleAmplitudes', {});
+  const [wobbleFrequencies, setWobbleFrequencies] = useLocalStorage<Record<number, number>>('wobbleFrequencies', {});
+  const [isControlsOpen, setIsControlsOpen] = useLocalStorage<boolean>('isControlsOpen', true);
+  const [selectedPreset, setSelectedPreset] = useLocalStorage<Record<number, string>>('selectedPreset', {});
 
   useEffect(() => {
     let cancelled = false;
@@ -92,10 +107,10 @@ export default function App() {
   }, [deviceId]);
 
   const activeIndex = currentIndex ?? 0;
-  const currentOpacity = imageOpacities[activeIndex] ?? 1;
+  const currentOpacity = imageOpacities[activeIndex] ?? 0.83;
   const currentBlendScreen = useBlendScreens[activeIndex] ?? false;
   const currentScale = imageScales[activeIndex] ?? 1;
-  const currentFilterIntensity = filterIntensities[activeIndex] ?? 0;
+  const currentFilterIntensity = filterIntensities[activeIndex] ?? 0.8;
   const currentWobbleAmplitude = wobbleAmplitudes[activeIndex] ?? 0;
   const currentWobbleFrequency = wobbleFrequencies[activeIndex] ?? 1;
   const queueBadge = queueClaim
@@ -111,6 +126,16 @@ export default function App() {
   const handleWobbleAmplitudeChange = (val: number) => setWobbleAmplitudes(prev => ({ ...prev, [activeIndex]: val }));
   const handleWobbleFrequencyChange = (val: number) => setWobbleFrequencies(prev => ({ ...prev, [activeIndex]: val }));
 
+  const applyPreset = (presetName: keyof typeof PRESETS) => {
+    const preset = PRESETS[presetName];
+    setImageOpacities(prev => ({ ...prev, [activeIndex]: preset.opacity }));
+    setImageScales(prev => ({ ...prev, [activeIndex]: preset.scale }));
+    setWobbleAmplitudes(prev => ({ ...prev, [activeIndex]: preset.wobbleAmplitude }));
+    setWobbleFrequencies(prev => ({ ...prev, [activeIndex]: preset.wobbleFrequency }));
+    setUseBlendScreens(prev => ({ ...prev, [activeIndex]: preset.blendScreen }));
+    setSelectedPreset(prev => ({ ...prev, [activeIndex]: presetName }));
+  };
+
   const nextImage = (e?: MouseEvent) => {
     if (e) e.stopPropagation();
     if (isQueueLoading && currentIndex === null) return;
@@ -125,6 +150,32 @@ export default function App() {
       return current === 0 ? IMAGES.length - 1 : current - 1;
     });
   };
+
+  const rejoinQueue = async (e: MouseEvent) => {
+    e.stopPropagation();
+    setIsRejoiningQueue(true);
+    setIsQueueLoading(true);
+    setQueueClaim(null);
+    setQueueError(null);
+    setCurrentIndex(null);
+
+    const nextDeviceId = window.crypto?.randomUUID?.() ?? `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    setDeviceId(nextDeviceId);
+
+    try {
+      const claim = await claimQueue(nextDeviceId);
+      setQueueClaim(claim);
+      setCurrentIndex((claim.queuePosition - 1) % IMAGES.length);
+    } catch (error) {
+      console.error('Failed to rejoin queue:', error);
+      setQueueError('队列服务不可用，已切回本地模式。');
+      setCurrentIndex(0);
+    } finally {
+      setIsQueueLoading(false);
+      setIsRejoiningQueue(false);
+    }
+  };
+
 
   const exportData = (e: MouseEvent) => {
     e.stopPropagation();
@@ -189,6 +240,13 @@ export default function App() {
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
             {queueBadge}
           </div>
+          <button
+            onClick={rejoinQueue}
+            disabled={isQueueLoading || isRejoiningQueue}
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRejoiningQueue ? '重新排队中...' : '重新排队'}
+          </button>
           <div className="flex gap-2">
             <label className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md cursor-pointer transition-colors" title="Import Settings">
               <Upload size={14} />
@@ -202,40 +260,33 @@ export default function App() {
       </nav>
 
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-        {isQueueLoading && currentIndex === null ? (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <div className="h-12 w-12 rounded-full border border-white/15 border-t-white animate-spin" />
-            <div className="text-xs uppercase tracking-[0.35em] text-white/50">正在加入队列</div>
-          </div>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={activeIndex}
-              initial={{ opacity: 0, scale: currentScale * 0.95, filter: `${filterString} blur(10px)` }}
-              animate={{ 
-                opacity: currentOpacity, 
-                scale: currentScale, 
-                filter: `${filterString} blur(0px)`,
-                y: currentWobbleAmplitude > 0 ? [0, -currentWobbleAmplitude, 0, currentWobbleAmplitude, 0] : 0,
-                rotate: currentWobbleAmplitude > 0 ? [0, currentWobbleAmplitude * 0.1, 0, -currentWobbleAmplitude * 0.1, 0] : 0
-              }}
-              exit={{ opacity: 0, scale: currentScale * 1.05, filter: `${filterString} blur(10px)` }}
-              transition={{ 
-                duration: 0.8, 
-                ease: [0.22, 1, 0.36, 1],
-                y: { repeat: Infinity, duration: 10 / currentWobbleFrequency, ease: "easeInOut" },
-                rotate: { repeat: Infinity, duration: 10 / currentWobbleFrequency, ease: "easeInOut" },
-              }}
-              className="w-full h-full object-contain md:max-w-5xl md:max-h-[80vh] p-8"
-            >
-              <img
-                src={IMAGES[activeIndex]}
-                alt={`Gallery image ${activeIndex + 1}`}
-                className={`w-full h-full object-contain ${currentBlendScreen ? 'mix-blend-screen' : ''}`}
-              />
-            </motion.div>
-          </AnimatePresence>
-        )}
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={activeIndex}
+            initial={{ opacity: 0, scale: currentScale * 0.95, filter: `${filterString} blur(10px)` }}
+            animate={{ 
+              opacity: currentOpacity, 
+              scale: currentScale, 
+              filter: `${filterString} blur(0px)`,
+              y: currentWobbleAmplitude > 0 ? [0, -currentWobbleAmplitude, 0, currentWobbleAmplitude, 0] : 0,
+              rotate: currentWobbleAmplitude > 0 ? [0, currentWobbleAmplitude * 0.1, 0, -currentWobbleAmplitude * 0.1, 0] : 0
+            }}
+            exit={{ opacity: 0, scale: currentScale * 1.05, filter: `${filterString} blur(10px)` }}
+            transition={{ 
+              duration: 0.8, 
+              ease: [0.22, 1, 0.36, 1],
+              y: { repeat: Infinity, duration: 10 / currentWobbleFrequency, ease: "easeInOut" },
+              rotate: { repeat: Infinity, duration: 10 / currentWobbleFrequency, ease: "easeInOut" },
+            }}
+            className="w-full h-full object-contain md:max-w-5xl md:max-h-[80vh] p-8"
+          >
+            <img
+              src={IMAGES[activeIndex]}
+              alt={`Gallery image ${activeIndex + 1}`}
+              className={`w-full h-full object-contain ${currentBlendScreen ? 'mix-blend-screen' : ''}`}
+            />
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <div className="absolute inset-y-0 left-0 w-32 md:w-64 flex items-center justify-start px-4 md:px-8 z-10">
@@ -277,16 +328,42 @@ export default function App() {
           {false && (
           <AnimatePresence mode="wait">
             {!isControlsOpen ? (
-              <motion.button
-                key="open-button"
+              <motion.div
+                key="preset-buttons"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                onClick={(e) => { e.stopPropagation(); setIsControlsOpen(true); }}
-                className="w-10 h-10 rounded-full bg-white/20 blur-[1px] hover:blur-none backdrop-blur-md flex items-center justify-center transition-all border border-white/30"
+                className="flex flex-row gap-3 items-center"
               >
-                <Settings size={18} className="text-white" />
-              </motion.button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsControlsOpen(true); }}
+                  className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center transition-all border border-white/30 text-white/70 hover:text-white"
+                  title="Open Settings"
+                >
+                  <Settings size={18} />
+                </button>
+                <div className="flex flex-row gap-2">
+                  {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map(presetName => (
+                    <motion.button
+                      key={`preset-icon-${presetName}`}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => { e.stopPropagation(); applyPreset(presetName); }}
+                      className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border ${
+                        selectedPreset[activeIndex] === presetName
+                          ? 'bg-white text-black border-white/80'
+                          : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20 hover:border-white/40'
+                      }`}
+                      title={PRESET_ICONS[presetName].label}
+                    >
+                      <div
+                        className="w-5 h-5"
+                        dangerouslySetInnerHTML={{ __html: PRESET_ICONS[presetName].svg }}
+                      />
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
             ) : (
               <motion.div 
                 key="controls-panel"
@@ -303,6 +380,27 @@ export default function App() {
                     <X size={16} />
                   </button>
                 </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/70">Presets</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map(presetName => (
+                      <button
+                        key={presetName}
+                        onClick={() => applyPreset(presetName)}
+                        className={`px-2 py-1 text-[9px] uppercase tracking-widest rounded transition-all ${
+                          selectedPreset[activeIndex] === presetName
+                            ? 'bg-white text-black font-semibold'
+                            : 'bg-white/20 text-white/70 hover:bg-white/30'
+                        }`}
+                      >
+                        {presetName}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="w-full h-px bg-white/10" />
 
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between">
