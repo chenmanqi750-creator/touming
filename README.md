@@ -18,3 +18,5 @@ View your app in AI Studio: https://ai.studio/apps/a9d3e9f8-f535-410f-94b7-10cec
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+The queue assignment is now served by the same Node process, so different computers opening the same link will receive different starting images as long as they hit the same running backend instance.
