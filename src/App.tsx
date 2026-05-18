@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { ChangeEvent, MouseEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, Settings, X, Download, Upload } from 'lucide-react';
 
 import { useLocalStorage } from './hooks';
+import { claimQueue, type QueueClaim } from './queue';
 
 import photo1 from './assets/images/photo1.png';
 import photo2 from './assets/images/photo2.png';
@@ -57,53 +59,126 @@ const PRESET_ICONS: Record<keyof typeof PRESETS, { label: string; svg: string }>
 };
 
 export default function App() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [imageOpacities, setImageOpacities] = useLocalStorage<Record<number, number>>("imageOpacities", {});
-  const [useBlendScreens, setUseBlendScreens] = useLocalStorage<Record<number, boolean>>("useBlendScreens", {});
-  const [imageScales, setImageScales] = useLocalStorage<Record<number, number>>("imageScales", {});
-  const [filterIntensities, setFilterIntensities] = useLocalStorage<Record<number, number>>("filterIntensities", {});
-  const [wobbleAmplitudes, setWobbleAmplitudes] = useLocalStorage<Record<number, number>>("wobbleAmplitudes", {});
-  const [wobbleFrequencies, setWobbleFrequencies] = useLocalStorage<Record<number, number>>("wobbleFrequencies", {});
-  const [isControlsOpen, setIsControlsOpen] = useLocalStorage<boolean>("isControlsOpen", true);
-  const [selectedPreset, setSelectedPreset] = useLocalStorage<Record<number, string>>("selectedPreset", {});
+  const [deviceId, setDeviceId] = useLocalStorage<string>('touming-device-id', ensureDeviceId());
+  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
+  const [queueClaim, setQueueClaim] = useState<QueueClaim | null>(null);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const [isQueueLoading, setIsQueueLoading] = useState(true);
+  const [isRejoiningQueue, setIsRejoiningQueue] = useState(false);
+  const [imageOpacities, setImageOpacities] = useLocalStorage<Record<number, number>>('imageOpacities', {});
+  const [useBlendScreens, setUseBlendScreens] = useLocalStorage<Record<number, boolean>>('useBlendScreens', {});
+  const [imageScales, setImageScales] = useLocalStorage<Record<number, number>>('imageScales', {});
+  const [filterIntensities, setFilterIntensities] = useLocalStorage<Record<number, number>>('filterIntensities', {});
+  const [wobbleAmplitudes, setWobbleAmplitudes] = useLocalStorage<Record<number, number>>('wobbleAmplitudes', {});
+  const [wobbleFrequencies, setWobbleFrequencies] = useLocalStorage<Record<number, number>>('wobbleFrequencies', {});
+  const [isControlsOpen, setIsControlsOpen] = useLocalStorage<boolean>('isControlsOpen', true);
+  const [selectedPreset, setSelectedPreset] = useLocalStorage<Record<number, string>>('selectedPreset', {});
 
-  const currentOpacity = imageOpacities[currentIndex] ?? 0.83;
-  const currentBlendScreen = useBlendScreens[currentIndex] ?? false;
-  const currentScale = imageScales[currentIndex] ?? 1;
-  const currentFilterIntensity = filterIntensities[currentIndex] ?? 0.8;
-  const currentWobbleAmplitude = wobbleAmplitudes[currentIndex] ?? 0;
-  const currentWobbleFrequency = wobbleFrequencies[currentIndex] ?? 1;
+  useEffect(() => {
+    let cancelled = false;
 
-  const handleOpacityChange = (val: number) => setImageOpacities(prev => ({ ...prev, [currentIndex]: val }));
-  const handleBlendScreenChange = (val: boolean) => setUseBlendScreens(prev => ({ ...prev, [currentIndex]: val }));
+    const syncQueue = async () => {
+      try {
+        const claim = await claimQueue(deviceId);
+        if (cancelled) return;
+
+        setQueueClaim(claim);
+        setQueueError(null);
+        setCurrentIndex((prev) => prev ?? ((claim.queuePosition - 1) % IMAGES.length));
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error('Failed to claim queue slot:', error);
+        setQueueError('队列服务不可用，已切回本地模式。');
+        setCurrentIndex((prev) => prev ?? 0);
+      } finally {
+        if (!cancelled) setIsQueueLoading(false);
+      }
+    };
+
+    syncQueue();
+    const timer = window.setInterval(syncQueue, 15000);
+    window.addEventListener('focus', syncQueue);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', syncQueue);
+    };
+  }, [deviceId]);
+
+  const activeIndex = currentIndex ?? 0;
+  const currentOpacity = imageOpacities[activeIndex] ?? 0.83;
+  const currentBlendScreen = useBlendScreens[activeIndex] ?? false;
+  const currentScale = imageScales[activeIndex] ?? 1;
+  const currentFilterIntensity = filterIntensities[activeIndex] ?? 0.8;
+  const currentWobbleAmplitude = wobbleAmplitudes[activeIndex] ?? 0;
+  const currentWobbleFrequency = wobbleFrequencies[activeIndex] ?? 1;
+  const queueBadge = queueClaim
+    ? `排队 #${String(queueClaim.queuePosition).padStart(2, '0')}`
+    : queueError ?? '正在连接...';
+
+  const handleOpacityChange = (val: number) => setImageOpacities(prev => ({ ...prev, [activeIndex]: val }));
+  const handleBlendScreenChange = (val: boolean) => setUseBlendScreens(prev => ({ ...prev, [activeIndex]: val }));
   const handleScaleChange = (val: number) => {
-    setImageScales(prev => ({ ...prev, [currentIndex]: val }));
+    setImageScales(prev => ({ ...prev, [activeIndex]: val }));
   };
-  const handleFilterIntensityChange = (val: number) => setFilterIntensities(prev => ({ ...prev, [currentIndex]: val }));
-  const handleWobbleAmplitudeChange = (val: number) => setWobbleAmplitudes(prev => ({ ...prev, [currentIndex]: val }));
-  const handleWobbleFrequencyChange = (val: number) => setWobbleFrequencies(prev => ({ ...prev, [currentIndex]: val }));
+  const handleFilterIntensityChange = (val: number) => setFilterIntensities(prev => ({ ...prev, [activeIndex]: val }));
+  const handleWobbleAmplitudeChange = (val: number) => setWobbleAmplitudes(prev => ({ ...prev, [activeIndex]: val }));
+  const handleWobbleFrequencyChange = (val: number) => setWobbleFrequencies(prev => ({ ...prev, [activeIndex]: val }));
 
   const applyPreset = (presetName: keyof typeof PRESETS) => {
     const preset = PRESETS[presetName];
-    setImageOpacities(prev => ({ ...prev, [currentIndex]: preset.opacity }));
-    setImageScales(prev => ({ ...prev, [currentIndex]: preset.scale }));
-    setWobbleAmplitudes(prev => ({ ...prev, [currentIndex]: preset.wobbleAmplitude }));
-    setWobbleFrequencies(prev => ({ ...prev, [currentIndex]: preset.wobbleFrequency }));
-    setUseBlendScreens(prev => ({ ...prev, [currentIndex]: preset.blendScreen }));
-    setSelectedPreset(prev => ({ ...prev, [currentIndex]: presetName }));
+    setImageOpacities(prev => ({ ...prev, [activeIndex]: preset.opacity }));
+    setImageScales(prev => ({ ...prev, [activeIndex]: preset.scale }));
+    setWobbleAmplitudes(prev => ({ ...prev, [activeIndex]: preset.wobbleAmplitude }));
+    setWobbleFrequencies(prev => ({ ...prev, [activeIndex]: preset.wobbleFrequency }));
+    setUseBlendScreens(prev => ({ ...prev, [activeIndex]: preset.blendScreen }));
+    setSelectedPreset(prev => ({ ...prev, [activeIndex]: presetName }));
   };
 
-  const nextImage = (e?: React.MouseEvent) => {
+  const nextImage = (e?: MouseEvent) => {
     if (e) e.stopPropagation();
-    setCurrentIndex((prev) => (prev + 1) % IMAGES.length);
+    if (isQueueLoading && currentIndex === null) return;
+    setCurrentIndex((prev) => ((prev ?? 0) + 1) % IMAGES.length);
   };
 
-  const prevImage = (e?: React.MouseEvent) => {
+  const prevImage = (e?: MouseEvent) => {
     if (e) e.stopPropagation();
-    setCurrentIndex((prev) => (prev === 0 ? IMAGES.length - 1 : prev - 1));
+    if (isQueueLoading && currentIndex === null) return;
+    setCurrentIndex((prev) => {
+      const current = prev ?? 0;
+      return current === 0 ? IMAGES.length - 1 : current - 1;
+    });
   };
 
-  const exportData = (e: React.MouseEvent) => {
+  const rejoinQueue = async (e: MouseEvent) => {
+    e.stopPropagation();
+    setIsRejoiningQueue(true);
+    setIsQueueLoading(true);
+    setQueueClaim(null);
+    setQueueError(null);
+    setCurrentIndex(null);
+
+    const nextDeviceId = window.crypto?.randomUUID?.() ?? `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    setDeviceId(nextDeviceId);
+
+    try {
+      const claim = await claimQueue(nextDeviceId);
+      setQueueClaim(claim);
+      setCurrentIndex((claim.queuePosition - 1) % IMAGES.length);
+    } catch (error) {
+      console.error('Failed to rejoin queue:', error);
+      setQueueError('队列服务不可用，已切回本地模式。');
+      setCurrentIndex(0);
+    } finally {
+      setIsQueueLoading(false);
+      setIsRejoiningQueue(false);
+    }
+  };
+
+
+  const exportData = (e: MouseEvent) => {
     e.stopPropagation();
     const data = {
       imageOpacities,
@@ -124,7 +199,7 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const importData = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -163,6 +238,16 @@ export default function App() {
             <p className="text-[10px] uppercase tracking-widest opacity-40 mb-2">Collection</p>
             <p className="text-sm font-light">Dark Canvas</p>
           </div>
+          <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
+            {queueBadge}
+          </div>
+          <button
+            onClick={rejoinQueue}
+            disabled={isQueueLoading || isRejoiningQueue}
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRejoiningQueue ? '重新排队中...' : '重新排队'}
+          </button>
           <div className="flex gap-2">
             <label className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md cursor-pointer transition-colors" title="Import Settings">
               <Upload size={14} />
@@ -178,7 +263,7 @@ export default function App() {
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
         <AnimatePresence mode="popLayout">
           <motion.div
-            key={currentIndex}
+            key={activeIndex}
             initial={{ opacity: 0, scale: currentScale * 0.95, filter: `${filterString} blur(10px)` }}
             animate={{ 
               opacity: currentOpacity, 
@@ -197,8 +282,8 @@ export default function App() {
             className="w-full h-full object-contain md:max-w-5xl md:max-h-[80vh] p-8"
           >
             <img
-              src={IMAGES[currentIndex]}
-              alt={`Gallery image ${currentIndex + 1}`}
+              src={IMAGES[activeIndex]}
+              alt={`Gallery image ${activeIndex + 1}`}
               className={`w-full h-full object-contain ${currentBlendScreen ? 'mix-blend-screen' : ''}`}
             />
           </motion.div>
@@ -265,7 +350,7 @@ export default function App() {
                       whileTap={{ scale: 0.95 }}
                       onClick={(e) => { e.stopPropagation(); applyPreset(presetName); }}
                       className={`w-9 h-9 rounded-full flex items-center justify-center transition-all border ${
-                        selectedPreset[currentIndex] === presetName
+                        selectedPreset[activeIndex] === presetName
                           ? 'bg-white text-black border-white/80'
                           : 'bg-white/10 text-white/70 border-white/20 hover:bg-white/20 hover:border-white/40'
                       }`}
@@ -304,7 +389,7 @@ export default function App() {
                         key={presetName}
                         onClick={() => applyPreset(presetName)}
                         className={`px-2 py-1 text-[9px] uppercase tracking-widest rounded transition-all ${
-                          selectedPreset[currentIndex] === presetName
+                          selectedPreset[activeIndex] === presetName
                             ? 'bg-white text-black font-semibold'
                             : 'bg-white/20 text-white/70 hover:bg-white/30'
                         }`}
@@ -431,9 +516,18 @@ export default function App() {
           </AnimatePresence>
         </div>
         <div className="text-xl md:text-3xl font-serif italic flex gap-4 items-end pointer-events-none">
-          <span className="text-sm opacity-50 block pb-1">No.</span> {String(currentIndex + 1).padStart(2, '0')}
+          <span className="text-sm opacity-50 block pb-1">No.</span> {currentIndex === null ? '--' : String(activeIndex + 1).padStart(2, '0')}
         </div>
       </footer>
     </div>
   );
+}
+
+function ensureDeviceId() {
+  const existing = window.localStorage.getItem('touming-device-id');
+  if (existing) return existing;
+
+  const value = window.crypto?.randomUUID?.() ?? `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  window.localStorage.setItem('touming-device-id', value);
+  return value;
 }
