@@ -44,6 +44,19 @@ const IMAGES = [
   "https://raw.githubusercontent.com/chenmanqi750-creator/myglb/main/22.PNG",
 ];
 
+// 预设方案定义 - 透明度统一为 83%
+const PRESETS = {
+  gentle: { opacity: 0.83, scale: 0.85, wobbleAmplitude: 3, wobbleFrequency: 0.6, blendScreen: false },
+  pulse: { opacity: 0.83, scale: 1.5, wobbleAmplitude: 8, wobbleFrequency: 1.2, blendScreen: false },
+  flow: { opacity: 0.83, scale: 1.0, wobbleAmplitude: 5, wobbleFrequency: 0.8, blendScreen: true }
+};
+
+const PRESET_ICONS: Record<keyof typeof PRESETS, { label: string; svg: string }> = {
+  gentle: { label: 'Gentle', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M5.64 5.64l14.14 14.14M18.36 5.64L4.22 19.78"/></svg>' },
+  pulse: { label: 'Pulse', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-4 2 8 2-4h8M6 19l2-2m6 2l2-2"/></svg>' },
+  flow: { label: 'Flow', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c0-4 4-6 8-6 2 0 3 1 4 2 1-1 2-2 4-2 4 0 8 2 8 6M6 20c2-1 3-3 6-3s4 2 6 3"/></svg>' }
+};
+
 export default function App() {
   const [deviceId, setDeviceId] = useLocalStorage<string>('touming-device-id', ensureDeviceId());
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
@@ -315,13 +328,12 @@ export default function App() {
           {false && (
           <AnimatePresence mode="wait">
             {!isControlsOpen ? (
-              <motion.button
-                key="open-button"
+              <motion.div
+                key="preset-buttons"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                onClick={(e) => { e.stopPropagation(); setIsControlsOpen(true); }}
-                className="w-10 h-10 rounded-full bg-white/20 blur-[1px] hover:blur-none backdrop-blur-md flex items-center justify-center transition-all border border-white/30"
+                className="flex flex-row gap-3 items-center"
               >
                 <button
                   onClick={(e) => { e.stopPropagation(); setIsControlsOpen(true); }}
@@ -344,7 +356,7 @@ export default function App() {
                       }`}
                       title={PRESET_ICONS[presetName].label}
                     >
-                      <div 
+                      <div
                         className="w-5 h-5"
                         dangerouslySetInnerHTML={{ __html: PRESET_ICONS[presetName].svg }}
                       />
